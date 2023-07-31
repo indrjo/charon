@@ -1,0 +1,36 @@
+#!/bin/sh
+
+set -e -o pipefail
+
+# Take a direcotry as argument and perform some unclutter within it.
+_clean () {
+  # In all repos with a Makefile, run `make clean` if possible.
+  find "$1" -iname 'makefile' \
+       -exec sh -c 'cd $(dirname {}); make clean' \;
+  # Get rid of spaces in filenames. Use with care this script...
+  # !!! It is the Perl's rename. To install it, just run
+  # !!!   $ cpan install File::Rename
+  find "$1" -name '*\ *' -exec rename 's!\s+!_!g' '{}' \;
+}
+
+_cp () {
+  [ -d "$1" ] && _clean "$1"
+  cp -ruv "$1" "$2"
+}
+
+export -f _clean _cp
+
+# Take as argument one file and a directory: move all the paths written in
+# that file to the directory of the second argument.
+_cps () {
+  grep -vP '^\s*(#|$)' "$1" | \
+  sed -E 's!#.*!!; s!^\s+!!; s!\s+$!!' | \
+  xargs -I % sh -c "_cp % $2"
+}
+
+###
+
+[ -f "$1" ] || (echo "$1 does not exist"; exit 1)
+[ -d "$2" ] || (echo "$2 does not exist"; exit 2)
+_cps "$1" "$2"
+

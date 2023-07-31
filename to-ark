@@ -1,0 +1,7 @@
+#!/bin/sh
+
+set -e
+
+cd $(dirname "$0")
+./charon to-ark.charon /run/media/indrjo/ark
+

@@ -1,0 +1,20 @@
+
+# personal directories
+~/io 
+~/sandbox
+~/charon
+
+# other directories
+~/Documents
+~/Music
+#~/Videos
+~/Pictures
+
+# configs...
+~/.bash_aliases
+~/.bashrc
+~/.emacs
+~/.guile
+~/.qtikz-template.pgs
+~/.vimrc
+
