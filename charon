@@ -1,20 +1,37 @@
-#!/bin/sh
+#!/usr/bin/env sh
+
+# This small script serves the purpouse to copy a hoard of things from one
+# position to another one, by reading some simple textual files.
 
 set -e -o pipefail
 
-# Take a direcotry as argument and perform some unclutter within it.
+# Check if we are using the Perl's rename, instead of any other rename your
+# distro gives you. It may happen that you distro gives you that rename, to
+# be sure we require to install the Perl's module File::Rename.
+case "$(which rename)" in
+  */perl5/bin/rename)
+    # ok...
+  ;;
+  *)
+    echo "!!! Perl's rename is required but absent!"
+    echo "!!! To install it: $ cpan -i File::Rename"
+    exit
+  ;;
+esac
+
+# Take a directory and perform some unclutter within it.
 _clean () {
   # In all repos with a Makefile, run `make clean` if possible.
-  find "$1" -iname 'makefile' \
-       -exec sh -c 'cd $(dirname {}); make clean' \;
-  # Get rid of spaces in filenames. Use with care this script...
-  # !!! It is the Perl's rename. To install it, just run
-  # !!!   $ cpan install File::Rename
-  find "$1" -name '*\ *' -exec rename 's!\s+!_!g' '{}' \;
+  find "$1" -type f -iname 'makefile' \
+       -exec sh -c 'cd $(dirname {}) && make clean' \;
+  # We use the Perl's rename to achieve to eliminate spaces in filenames.
+  find "$1" -name '*\ *' -exec rename 's,\s+,_,g' '{}' \;
 }
 
+# Before running the cp command if directories can be "_clean"ed.
 _cp () {
   [ -d "$1" ] && _clean "$1"
+  [ -d "$2" ] || mkdir -p "$2"
   cp -ruv "$1" "$2"
 }
 
@@ -24,13 +41,22 @@ export -f _clean _cp
 # that file to the directory of the second argument.
 _cps () {
   grep -vP '^\s*(#|$)' "$1" | \
-  sed -E 's!#.*!!; s!^\s+!!; s!\s+$!!' | \
-  xargs -I % sh -c "_cp % $2"
+    sed -E 's!#.*!!' | sed -E 's!^\s+!!' | sed -E 's!\s+$!!' | \
+      xargs -I % sh -c "_cp % $2"
 }
 
-###
-
-[ -f "$1" ] || (echo "$1 does not exist"; exit 1)
-[ -d "$2" ] || (echo "$2 does not exist"; exit 2)
-_cps "$1" "$2"
+# MAIN
+if [ -f "$1" ]
+then
+  if [ -d "$2" ]
+  then
+    _cps "$1" "$2"
+  else
+    echo "!!! '$2' does not exist"
+    exit 2
+  fi
+else
+  echo "!!! '$1' does not exist"
+  exit 1
+fi
 
